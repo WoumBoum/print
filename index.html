@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HelloWorld("print")</title>
+<meta name="description" content="Posters déco A3 pour les chambres de la Maisel. 7,99 € l'affiche, 19,99 € les 3.">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="logo.png">
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wdth,wght@75..112.5,300..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script defer src="commun.js"></script>
+<script defer src="app.js"></script>
+</head>
+<body>
+
+<!-- ============ ACCUEIL ============ -->
+<section class="ecran actif" id="accueil">
+  <header class="hero">
+    <img class="hero-logo" src="logo.svg" alt="HelloWorld(&quot;print&quot;) — logo" width="488" height="498">
+  </header>
+
+  <div class="bloc">
+    <p class="prompt glitch" aria-hidden="true">X./§§§/.X</p>
+    <h1 class="titre">Posters A3.<br><span class="surligne">Pas chers.</span></h1>
+    <p class="texte"><span class="glitch g-inline" aria-hidden="true">//::</span> livrés à ta chambre, Maisel.</p>
+  </div>
+
+  <div class="prix-grille">
+    <div class="prix"><span class="prix-n">×1</span><span class="prix-v">7,99&nbsp;€</span></div>
+    <div class="prix"><span class="prix-n">×2</span><span class="prix-v">14,99&nbsp;€</span></div>
+    <div class="prix prix-top"><span class="prix-n">×3</span><span class="prix-v">19,99&nbsp;€</span><span class="prix-tag">best</span></div>
+  </div>
+  <p class="petit centre">A3 <span class="glitch g-inline" aria-hidden="true">§.§</span> mat <span class="glitch g-inline" aria-hidden="true">§.§</span> épais</p>
+
+  <div class="bloc">
+    <p class="prompt">&gt;&gt;&gt; <span class="glitch g-inline" aria-hidden="true">X/::\X</span></p>
+    <ol class="etapes-liste">
+      <li><b>Tu remplis</b> ce site.</li>
+      <li><b>Tu ajoutes</b> tes designs.</li>
+      <li><b>Tu paies</b> → ton <span class="surligne">code</span>.</li>
+      <li><b>J'imprime</b>, je livre.</li>
+    </ol>
+  </div>
+  <div class="bas-fixe">
+    <button class="btn btn-rouge" data-aller="etape-infos">Commencer ma commande →</button>
+    <a class="lien-insta cache" id="lien-insta-accueil" target="_blank" rel="noopener">Suivre sur Instagram</a>
+  </div>
+</section>
+
+<!-- ============ ÉTAPE 1 : INFOS ============ -->
+<section class="ecran" id="etape-infos">
+  <nav class="barre"><button class="retour" data-retour aria-label="Retour">←</button><div class="progression"><span style="--p:25%"></span></div><span class="num">1/4</span></nav>
+  <div class="bloc">
+    <p class="prompt glitch" aria-hidden="true">{..§X§..}</p>
+    <h2 class="titre brouille">Qui es-tu ?</h2>
+  </div>
+  <form id="form-infos" class="formulaire" novalidate>
+    <div class="ligne2">
+      <label>Prénom<input name="prenom" autocomplete="given-name" required></label>
+      <label>Nom<input name="nom" autocomplete="family-name" required></label>
+    </div>
+    <label>Chambre<input name="chambre" inputmode="text" placeholder="ex. B214" required></label>
+    <label>Téléphone<input name="tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="06 12 34 56 78" required></label>
+    <label>Mail<input name="email" type="email" inputmode="email" autocomplete="email" placeholder="toi@mail.com" required></label>
+    <label>Insta <span class="opt">(option)</span><input name="insta" autocapitalize="none" spellcheck="false" placeholder="@ton.pseudo"></label>
+    <p class="erreur" id="infos-erreur"></p>
+  </form>
+  <div class="bas-fixe"><button class="btn btn-rouge" id="infos-ok">Continuer</button></div>
+</section>
+
+<!-- ============ ÉTAPE 2 : DESIGNS ============ -->
+<section class="ecran" id="etape-designs">
+  <nav class="barre"><button class="retour" data-retour aria-label="Retour">←</button><div class="progression"><span style="--p:50%"></span></div><span class="num">2/4</span></nav>
+  <div class="bloc">
+    <p class="prompt">&gt;&gt;&gt; designs.append()</p>
+    <h2 class="titre brouille">Tes designs</h2>
+    <p class="texte">Images brutes. Je gère le format.</p>
+  </div>
+  <label class="depot" id="depot">
+    <input type="file" id="fichiers" accept="image/*" multiple>
+    <span class="depot-plus">+</span>
+    <span>Ajouter</span>
+  </label>
+  <ul class="designs" id="liste-designs"></ul>
+  <div class="total" id="total-designs"></div>
+  <div class="bas-fixe"><button class="btn btn-rouge" id="designs-ok" disabled>Continuer</button></div>
+</section>
+
+<!-- ============ ÉTAPE 3 : CODE ============ -->
+<section class="ecran" id="etape-code">
+  <nav class="barre"><button class="retour" data-retour aria-label="Retour">←</button><div class="progression"><span style="--p:75%"></span></div><span class="num">3/4</span></nav>
+  <div class="bloc">
+    <p class="prompt">&gt;&gt;&gt; code = input()</p>
+    <h2 class="titre brouille">Ton code</h2>
+    <p class="texte">Tout est prêt. Il ne manque que ton code, donné après paiement.</p>
+    <div class="total" id="total-code"></div>
+  </div>
+  <div class="code-cases" id="code-cases">
+    <input inputmode="text" autocomplete="one-time-code" maxlength="4" id="code" class="code-input" aria-label="Code de commande" autocapitalize="characters" spellcheck="false">
+    <div class="code-visu" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+  </div>
+  <p class="erreur" id="code-erreur"></p>
+  <p class="petit">Pas encore de code&nbsp;? Envoie un DM à <a class="lien-dm" href="https://instagram.com/helloworld_print_" target="_blank" rel="noopener">@helloworld_print_</a> sur Instagram : tu paies, tu reçois ton code. Ta commande reste enregistrée sur ce téléphone en attendant.</p>
+  <p class="petit glitch" aria-hidden="true">..XX/§§/XX..</p>
+  <div class="bas-fixe"><button class="btn btn-rouge" id="code-ok" disabled>Continuer</button></div>
+</section>
+
+<!-- ============ ÉTAPE 4 : RÉCAP ============ -->
+<section class="ecran" id="etape-recap">
+  <nav class="barre"><button class="retour" data-retour aria-label="Retour">←</button><div class="progression"><span style="--p:100%"></span></div><span class="num">4/4</span></nav>
+  <div class="bloc">
+    <p class="prompt glitch" aria-hidden="true">X./::/.X</p>
+    <h2 class="titre brouille">On vérifie</h2>
+  </div>
+  <div class="recap" id="recap"></div>
+  <p class="petit">Rien n'est envoyé sans toi.</p>
+  <div class="bas-fixe"><button class="btn btn-rouge" id="generer">Créer mon ticket</button></div>
+</section>
+
+<!-- ============ FIN : ENVOI ============ -->
+<section class="ecran" id="fin">
+  <div class="bloc">
+    <p class="prompt">&gt;&gt;&gt; send(ticket)</p>
+    <h2 class="titre">Ticket prêt <span class="surligne" id="fin-code"></span></h2>
+    <p class="texte">Envoie-le moi. Pas de ticket, pas d'impression.</p>
+  </div>
+  <div class="ticket-apercu" id="ticket-apercu"></div>
+
+  <div class="envoi">
+    <p class="petit">À :</p>
+    <button class="adresse" id="copier-adresse" type="button"><span id="adresse-txt"></span><span class="copie" id="copie-etat">copier</span></button>
+    <button class="btn btn-rouge" id="partager">Envoyer ticket + images</button>
+    <div class="duo">
+      <a class="btn btn-ligne" id="gmail" target="_blank" rel="noopener">Gmail</a>
+      <a class="btn btn-ligne" id="mailto">Autre appli mail</a>
+    </div>
+    <button class="btn btn-ligne" id="telecharger">Télécharger le PDF</button>
+    <p class="petit" id="aide-envoi"></p>
+  </div>
+
+  <div class="bloc">
+    <p class="prompt glitch" aria-hidden="true">§§/..XX..\§§</p>
+    <p class="texte">Je te préviens quand c'est prêt.</p>
+    <a class="btn btn-blanc cache" id="lien-insta-fin" target="_blank" rel="noopener">S'abonner sur Instagram</a>
+  </div>
+  <button class="lien-discret" id="nouvelle">Nouvelle commande</button>
+</section>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="chargement" id="chargement"><div class="curseur">_</div><p id="chargement-txt" class="glitch" aria-hidden="true">X./§§§/.X</p></div>
+</body>
+</html>
