@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Caisse · HelloWorld("print")</title>
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="logo.png">
+<link rel="apple-touch-icon" href="icone-apple-180.png">
+<link rel="manifest" href="manifest-caisse.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Caisse">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wdth,wght@75..112.5,300..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script defer src="commun.js"></script>
+<script defer src="ticket-lecteur.js"></script>
+<script>if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));</script>
+<style>
+  .caisse { max-width: 980px; margin: 0 auto; padding: 18px var(--gutter) 60px; }
+  .entete { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1.5px solid var(--blanc); padding-bottom: 12px; }
+  .entete h1 { margin: 0; font-size: 20px; font-variation-settings: "wdth" 75; }
+  .onglets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin: 16px 0 22px; border: 1.5px solid var(--ligne); }
+  .onglets button { background: none; border: 0; color: var(--gris); font: inherit; font-weight: 700; padding: 14px 6px; cursor: pointer; }
+  .onglets button.on { background: var(--blanc); color: var(--noir); }
+  .vue { display: none; } .vue.on { display: block; animation: entree .25s; }
+  .grille { display: grid; gap: 22px; }
+  @media (min-width: 760px) { .grille { grid-template-columns: 1fr 1fr; align-items: start; } }
+  .champ { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: #cfcfcf; font-weight: 600; margin-bottom: 14px; }
+  .pas { display: flex; align-items: stretch; }
+  .pas button { width: 56px; background: var(--gris-fonce); color: var(--blanc); border: 1.5px solid var(--ligne); font: inherit; font-size: 22px; cursor: pointer; }
+  .pas output { flex: 1; display: grid; place-items: center; font-size: 26px; font-weight: 800; border-block: 1.5px solid var(--ligne); }
+  .bascule { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1.5px solid var(--ligne); }
+  .bascule button { background: none; border: 0; color: var(--gris); font: inherit; font-weight: 700; padding: 13px; cursor: pointer; }
+  .bascule button.on { background: var(--rouge); color: var(--blanc); }
+  .carte-code { border: 1.5px solid var(--blanc); padding: 20px; text-align: center; min-height: 100%; }
+  .carte-code .vide { color: var(--gris); padding: 60px 0; }
+  .gros-code { font-size: clamp(56px, 14vw, 104px); font-weight: 800; font-variation-settings: "wdth" 75; letter-spacing: .12em; background: var(--rouge); padding: 0 .2em 0 .32em; display: inline-block; line-height: 1.2; }
+  #carte-code { margin-top: 16px; }
+  /* QR de paiement dans la DA : ticket noir, plaque blanche, yeux rouges */
+  .ticket-qr { display: inline-block; border: 1.5px solid var(--blanc); background: var(--noir); padding: 14px 14px 12px; margin: 6px 0 4px; text-align: left; position: relative; }
+  .ticket-qr::before, .ticket-qr::after { content: ""; position: absolute; width: 14px; height: 14px; background: var(--rouge-vif); }
+  .ticket-qr::before { top: -1.5px; left: -1.5px; } .ticket-qr::after { bottom: -1.5px; right: -1.5px; }
+  .ticket-qr .tete { display: flex; justify-content: space-between; gap: 14px; font-size: 12px; margin-bottom: 10px; color: var(--gris); }
+  .ticket-qr .tete b { color: var(--blanc); font-weight: 700; }
+  .ticket-qr .plaque { background: #fff; padding: 10px; }
+  .ticket-qr svg { display: block; width: min(300px, 68vw); height: auto; }
+  .ticket-qr .pied { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 10px; }
+  .ticket-qr .montant { font-size: 30px; font-weight: 800; font-variation-settings: "wdth" 75; background: var(--rouge); padding: 0 .25em; line-height: 1.25; }
+  .ticket-qr .bruit { font-size: 11px; color: var(--rouge-vif); letter-spacing: .08em; white-space: pre; }
+  .montant-wero { font-size: 34px; font-weight: 800; margin: 4px 0 0; }
+  .verif-input { font-size: 38px !important; text-align: center; letter-spacing: .3em; text-transform: uppercase; font-weight: 800 !important; }
+  .resultat { margin-top: 16px; padding: 18px; border: 1.5px solid var(--ligne); }
+  .resultat.ok { border-color: #3ba55d; } .resultat.deja { border-color: #e0a030; } .resultat.ko { border-color: var(--rouge-vif); background: #1a0606; }
+  .resultat h3 { margin: 0 0 8px; font-size: 18px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--ligne); vertical-align: middle; }
+  th { color: var(--gris); font-weight: 600; font-size: 11px; }
+  td.code { font-weight: 800; font-size: 15px; }
+  .puce { font-size: 11px; padding: 3px 8px; border: 1px solid var(--ligne); cursor: pointer; background: none; color: var(--gris); font-family: inherit; white-space: nowrap; }
+  .suppr-code { background: none; border: none; color: var(--gris); cursor: pointer; font-size: 14px; padding: 2px 6px; font-family: inherit; }
+  .suppr-code:hover { color: #ff5a5a; }
+  .puce.recu { background: #173d24; color: #9ee6b4; border-color: #2c6b40; }
+  .outils { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+  .outils .btn { width: auto; flex: 1 1 180px; margin: 0 !important; padding: 13px; font-size: 13px; }
+  .stats { display: flex; gap: 18px; color: var(--gris); font-size: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+  .stats b { color: var(--blanc); }
+  .depot { display: grid; gap: 4px; place-items: center; text-align: center; border: 1.5px dashed var(--blanc); padding: 30px 16px; cursor: pointer; margin-bottom: 4px; }
+  .depot b { font-size: 16px; } .depot span { font-size: 12px; color: var(--gris); }
+  .depot.survol { border-color: var(--rouge-vif); background: #1a0606; }
+  .fiche { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 13px; margin: 10px 0; }
+  .fiche dt { color: var(--gris); } .fiche dd { margin: 0; }
+  .vignettes { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; margin: 12px 0; }
+  .vignettes figure { margin: 0; font-size: 11px; color: var(--gris); }
+  .vignettes img { width: 100%; aspect-ratio: 1 / 1.414; object-fit: cover; display: block; background: var(--gris-fonce); border: 1px solid var(--ligne); }
+  .vignettes .q { color: var(--blanc); font-weight: 800; }
+  .alertes { margin: 8px 0; padding-left: 18px; font-size: 13px; color: #e0a030; }
+  .confirme { position: fixed; inset: 0; z-index: 50; background: var(--noir); display: grid; place-items: center; padding: 20px var(--gutter); overflow-y: auto; animation: entree .25s; }
+  .confirme[hidden] { display: none; }
+  .confirme-boite { width: 100%; max-width: 640px; text-align: center; border: 1.5px solid var(--blanc); padding: 26px 20px 22px; position: relative; }
+  .confirme-boite::before, .confirme-boite::after { content: ""; position: absolute; width: 18px; height: 18px; background: var(--rouge-vif); }
+  .confirme-boite::before { top: -1.5px; left: -1.5px; } .confirme-boite::after { bottom: -1.5px; right: -1.5px; }
+  .confirme-ok { font-size: 22px; font-weight: 800; color: #9ee6b4; margin: 6px 0 14px; }
+  .confirme-nom { font-size: 24px; font-weight: 800; font-variation-settings: "wdth" 75; text-transform: uppercase; margin: 16px 0 2px; }
+  .confirme-detail { color: #cfcfcf; margin: 0; }
+  .confirme-vignettes { grid-template-columns: repeat(auto-fit, minmax(90px, 120px)); justify-content: center; }
+  .confirme .bruit { display: block; color: var(--rouge-vif); font-size: 11px; letter-spacing: .08em; margin: 6px 0 14px; }
+  .reglages { margin-top: 12px; font-size: 13px; color: var(--gris); }
+  .reglages summary { cursor: pointer; padding: 6px 0; }
+  .reglages[open] { border: 1.5px solid var(--ligne); padding: 10px 14px 14px; }
+  .reglages .btn { width: auto; padding: 11px 18px; font-size: 13px; }
+  .table-scroll { overflow-x: auto; }
+  /* prospection des chambres */
+  .ch-saisie { font-size: 34px !important; text-align: center; letter-spacing: .12em; text-transform: uppercase; font-weight: 800 !important; }
+  .ch-deja { min-height: 20px; font-size: 13px; color: #e0a030; margin: 6px 0 12px; text-align: center; }
+  .ch-boutons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .ch-boutons .btn { margin: 0 !important; padding: 16px 8px; font-size: 14px; }
+  .ch-liste { list-style: none; margin: 10px 0 0; padding: 0; }
+  .ch-liste li { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--ligne); flex-wrap: wrap; }
+  .ch-num { font-weight: 800; font-size: 18px; min-width: 70px; }
+  .ch-info { flex: 1 1 140px; font-size: 12px; color: var(--gris); }
+  .ch-info b { color: var(--blanc); font-weight: 600; }
+  .ch-liste li.fait-auj { opacity: .45; }
+  .ch-actions { display: flex; gap: 6px; }
+  .ch-actions button { font: inherit; font-size: 11px; padding: 6px 9px; background: none; color: var(--blanc); border: 1px solid var(--ligne); cursor: pointer; white-space: nowrap; }
+  .ch-actions button.client { border-color: #2c6b40; color: #9ee6b4; }
+  .ch-titre { margin: 26px 0 0; font-size: 14px; display: flex; justify-content: space-between; align-items: baseline; }
+  .ch-titre span { color: var(--gris); font-size: 12px; font-weight: 400; }
+</style>
+</head>
+<body>
+<main class="caisse">
+  <div class="entete">
+    <h1>HelloWorld(<span class="surligne">"caisse"</span>)</h1>
+    <span class="petit" id="compteur" style="margin:0"></span>
+  </div>
+
+  <div class="onglets" role="tablist">
+    <button class="on" data-vue="v-generer">Nouveau code</button>
+    <button data-vue="v-liste">Commandes</button>
+    <button data-vue="v-chambres">Chambres</button>
+  </div>
+
+  <!-- GÉNÉRER -->
+  <section class="vue on" id="v-generer">
+    <div class="grille">
+      <div>
+        <p class="prompt">&gt;&gt;&gt; paiement reçu ? alors :</p>
+        <label class="champ">Prénom du client<input id="g-prenom" autocomplete="off" placeholder="ex. Léa"></label>
+        <div class="champ">Nombre d'affiches
+          <div class="pas"><button type="button" id="g-moins">−</button><output id="g-nb">1</output><button type="button" id="g-plus">+</button></div>
+        </div>
+        <label class="champ">Montant reçu (€)<input id="g-montant" inputmode="decimal"></label>
+        <div class="champ">Payé par
+          <div class="bascule" id="g-moyen"><button type="button" class="on" data-m="Wero">Wero</button><button type="button" data-m="Lydia">Lydia</button><button type="button" data-m="Carte">Carte</button></div>
+        </div>
+        <button class="btn btn-rouge" id="g-go">Générer le code</button>
+      </div>
+      <div>
+        <div class="carte-code" id="carte-paiement"></div>
+        <div class="carte-code" id="carte-code" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LISTE -->
+  <section class="vue" id="v-liste">
+    <div class="stats" id="stats"></div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Code</th><th>Date</th><th>Client</th><th>Aff.</th><th>Montant</th><th>Ticket</th><th></th></tr></thead>
+      <tbody id="lignes"></tbody>
+    </table></div>
+    <div class="outils">
+      <button class="btn btn-rouge" id="synchro">Mettre à jour la base</button>
+    </div>
+    <p class="petit" id="synchro-etat"></p>
+    <details class="reglages" id="ranger-mail">
+      <summary>Ranger un ticket reçu par mail</summary>
+      <p class="petit">Seulement si le client n'a pas pu envoyer sa commande depuis le site et te l'a envoyée par mail.</p>
+      <label class="depot" id="depot">
+        <input type="file" id="v-fichiers" multiple accept="application/pdf,.pdf,image/*" hidden>
+        <b>Dépose le ticket PDF</b>
+        <span>+ les images envoyées par le client (tu peux tout sélectionner d'un coup)</span>
+      </label>
+      <div id="v-resultat"></div>
+    </details>
+    <details class="reglages" id="reglages-base">
+      <summary>Réglages de la base (Google Sheet)</summary>
+      <label class="champ">Adresse du script (se termine par /exec)<input id="base-url" autocomplete="off" spellcheck="false" placeholder="https://script.google.com/macros/s/…/exec"></label>
+      <label class="champ">Clé secrète<input id="base-cle" type="password" autocomplete="off" spellcheck="false"></label>
+      <button class="btn btn-ligne" id="base-ok" type="button">Enregistrer</button>
+    </details>
+    <div class="outils">
+      <button class="btn btn-ligne" id="exp-csv">Exporter CSV</button>
+      <button class="btn btn-ligne" id="exp-json">Sauvegarde (JSON)</button>
+      <label class="btn btn-ligne">Restaurer<input type="file" id="imp-json" accept=".json,application/json" hidden></label>
+    </div>
+    <p class="petit">La liste affichée est celle du Google Sheet : elle se met à jour toute seule à l'ouverture de cet onglet et à chaque code créé. « reçu ✓ » = la commande est arrivée (depuis le site, ou rangée ici à partir d'un mail). ✕ supprime un code de test partout (tablette, Sheet, Drive).</p>
+  </section>
+  <!-- CHAMBRES : prospection porte à porte -->
+  <section class="vue" id="v-chambres">
+    <div class="stats" id="ch-stats"></div>
+    <div class="grille">
+      <div>
+        <p class="prompt">&gt;&gt;&gt; toc toc</p>
+        <label class="champ">Chambre<input class="ch-saisie" id="ch-num" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" spellcheck="false" placeholder="214"></label>
+        <p class="ch-deja" id="ch-deja"></p>
+        <div class="ch-boutons">
+          <button class="btn btn-rouge" data-statut="absent">Pas de réponse</button>
+          <button class="btn btn-ligne" data-statut="repasser">Intéressé, repasser</button>
+          <button class="btn btn-ligne" data-statut="non">Pas intéressé</button>
+          <button class="btn btn-ligne" data-statut="client">A acheté ✓</button>
+        </div>
+      </div>
+      <div>
+        <h3 class="ch-titre">À retoquer <span id="ch-nb-retoquer"></span></h3>
+        <ul class="ch-liste" id="ch-retoquer"></ul>
+      </div>
+    </div>
+    <details class="reglages">
+      <summary id="ch-resume-faites">Déjà faites</summary>
+      <ul class="ch-liste" id="ch-faites"></ul>
+    </details>
+    <p class="petit">Les chambres sont gardées dans cette tablette. Grisé = déjà toqué aujourd'hui. Les « Pas de réponse » les plus anciennes sont en haut.</p>
+  </section>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="confirme" id="confirme" hidden role="dialog" aria-modal="true" aria-labelledby="confirme-titre">
+  <div class="confirme-boite">
+    <p class="prompt">&gt;&gt;&gt; print(commande)</p>
+    <p class="confirme-ok" id="confirme-titre">Commande confirmée ✓</p>
+    <div class="gros-code" id="confirme-code"></div>
+    <p class="confirme-nom" id="confirme-nom"></p>
+    <p class="confirme-detail" id="confirme-detail"></p>
+    <div class="vignettes confirme-vignettes" id="confirme-vignettes"></div>
+    <p class="petit">Garde ton code : il sert de preuve d'achat. Je te préviens quand tes affiches sont prêtes.</p>
+    <span class="bruit" aria-hidden="true">..XX/§§/XX..</span>
+    <button class="btn btn-blanc" id="confirme-fermer">Terminé → Commandes</button>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  "use strict";
+  const { CONFIG, codeValide, nouveauCode, nettoyerCode, prix, euros } = HWP;
+  // codes supprimés dans la base : on ne les regénère jamais (sinon ils seraient ignorés par le Sheet)
+  let supprimes = [];
+  try { supprimes = JSON.parse(localStorage.getItem("hwp-caisse-supprimes")) || []; } catch (e) {}
+  const $ = id => document.getElementById(id);
+  const CLE = "hwp-caisse";
+  let liste = [];
+  try { liste = JSON.parse(localStorage.getItem(CLE)) || []; } catch (e) {}
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
+  const sauver = () => { localStorage.setItem(CLE, JSON.stringify(liste)); majCompteur(); };
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const dateFr = iso => new Date(iso).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  let tm; const toast = m => { const t = $("toast"); t.textContent = m; t.classList.add("visible"); clearTimeout(tm); tm = setTimeout(() => t.classList.remove("visible"), 2200); };
+  const majCompteur = () => { $("compteur").textContent = `${liste.length} code${liste.length > 1 ? "s" : ""}`; };
+  majCompteur();
+
+  // onglets
+  document.querySelectorAll("[data-vue]").forEach(b => b.onclick = () => {
+    document.querySelectorAll("[data-vue]").forEach(x => x.classList.toggle("on", x === b));
+    document.querySelectorAll(".vue").forEach(v => v.classList.toggle("on", v.id === b.dataset.vue));
+    if (b.dataset.vue === "v-liste") { rendreListe(); synchroniser(true); }
+    if (b.dataset.vue === "v-chambres") { rendreChambres(); setTimeout(() => $("ch-num").focus(), 200); }
+  });
+
+  // ---------- générer ----------
+  let nb = 1, moyen = "Wero";
+  const montantSaisi = () => parseFloat($("g-montant").value.replace(",", ".")) || prix(nb);
+  // QR Wero du montant à payer : même lien que « Mon QR code » de l'appli bancaire, montant en centimes.
+  // QR dessiné à la main dans la DA : modules noirs carrés, 3 yeux rouges, plaque blanche (contraste max pour le scan).
+  function qrDA(texte) {
+    const qr = qrcode(0, "M"); qr.addData(texte); qr.make();
+    const n = qr.getModuleCount(), m = 2, t = n + 2 * m;
+    const oeil = (r, c) => (r < 7 && c < 7) || (r < 7 && c >= n - 7) || (r >= n - 7 && c < 7);
+    let d = "";
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++)
+      if (qr.isDark(r, c) && !oeil(r, c)) d += `M${c + m + .05} ${r + m + .05}h.9v.9h-.9z`;
+    const yeux = [[0, 0], [0, n - 7], [n - 7, 0]].map(([r, c]) => {
+      const x = c + m, y = r + m;
+      return `<path fill="#a42626" fill-rule="evenodd" d="M${x} ${y}h7v7h-7zM${x + 1} ${y + 1}v5h5v-5z"/><rect fill="#000" x="${x + 2}" y="${y + 2}" width="3" height="3"/>`;
+    }).join("");
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${t} ${t}" shape-rendering="crispEdges"><rect width="${t}" height="${t}" fill="#fff"/><path fill="#000" d="${d}"/>${yeux}</svg>`;
+  }
+  function majPaiement() {
+    const m = montantSaisi(), c = Math.round(m * 100), carte = $("carte-paiement");
+    const lien = moyen === "Wero" ? CONFIG.wero && `${CONFIG.wero}?a=${c}&c=EUR`
+               : (moyen === "Carte" ? CONFIG.lydiaWeb : CONFIG.lydia) && `${moyen === "Carte" ? CONFIG.lydiaWeb : CONFIG.lydia}&a=${c}&d=${encodeURIComponent(`Achat ${nb} poster${nb > 1 ? "s" : ""}`)}`;
+    if (!lien) { carte.innerHTML = `<p class="montant-wero">${euros(m)}</p>`; return; }
+    carte.innerHTML = `<p class="prompt">&gt;&gt;&gt; pay("${esc(moyen.toLowerCase())}")</p>
+      <div class="ticket-qr">
+        <div class="tete"><b>${moyen === "Carte" ? "CARTE BANCAIRE" : esc(moyen.toUpperCase())}</b><span>${nb} aff. · A3</span></div>
+        <div class="plaque">${qrDA(lien)}</div>
+        <div class="pied"><span class="montant">${euros(m)}</span><span class="bruit" aria-hidden="true">..XX/§§/XX..</span></div>
+      </div>
+      <p class="petit">${moyen === "Carte"
+        ? `Le client scanne avec l'appareil photo : la page web Lydia s'ouvre, il choisit carte, Apple Pay ou Google Pay. Pas besoin de compte.<br>Frais 2,5 % pour toi : environ ${euros(Math.round(c * 0.025) / 100)}, tu reçois ~${euros((c - Math.round(c * 0.025)) / 100)}.<br>`
+        : moyen === "Lydia" ? "Paiement par carte sans l'appli Lydia : 2,5 % de frais pour toi.<br>" : ""}Attends de voir le paiement arriver avant de générer le code.</p>`;
+  }
+  const majNb = () => { $("g-nb").textContent = nb; $("g-montant").value = prix(nb).toFixed(2).replace(".", ","); majPaiement(); };
+  $("g-montant").addEventListener("input", majPaiement);
+  $("g-moins").onclick = () => { nb = Math.max(1, nb - 1); majNb(); };
+  $("g-plus").onclick = () => { nb = Math.min(20, nb + 1); majNb(); };
+  majNb();
+  $("g-moyen").querySelectorAll("button").forEach(b => b.onclick = () => {
+    moyen = b.dataset.m;
+    $("g-moyen").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+    majPaiement();
+  });
+  $("g-go").onclick = () => {
+    let code;
+    do { code = nouveauCode(); } while (liste.some(e => e.code === code) || supprimes.includes(code));
+    const entree = {
+      code, date: new Date().toISOString(), prenom: $("g-prenom").value.trim(), nb,
+      montant: montantSaisi(), moyen, recu: null
+    };
+    liste.unshift(entree); sauver();
+    const lien = `${CONFIG.site}?c=${code}`;
+    $("carte-code").innerHTML = `
+      <p class="prompt">code pour ${esc(entree.prenom || "le client")} · ${nb} aff. · ${euros(entree.montant)} ${moyen}</p>
+      <div class="gros-code">${code}</div>
+      <p class="petit">À taper sur <b>${esc(CONFIG.site.replace("https://", ""))}</b></p>
+      <button class="btn btn-ligne" id="copier-lien">Copier le lien (WhatsApp / Insta)</button>`;
+    $("copier-lien").onclick = async () => { try { await navigator.clipboard.writeText(lien); toast("Lien copié"); } catch (e) { toast(lien); } };
+    $("carte-code").hidden = false;
+    $("g-prenom").value = ""; nb = 1; majNb();
+    $("carte-code").scrollIntoView({ behavior: "smooth", block: "start" });
+    // le code doit être dans le Sheet pour que le client puisse envoyer sa commande depuis le site
+    if (base.url) synchroniser(false);
+  };
+
+  const infosCode = ent => `${esc(ent.prenom || "?")} · ${ent.nb} affiche${ent.nb > 1 ? "s" : ""} · ${euros(ent.montant)} ${ent.moyen} · donné le ${dateFr(ent.date)}`;
+
+  // ---------- vérifier (ticket PDF + images) ----------
+  let depot = null; // { pdf, ticket, images[], apercus[] }
+  const lireOctets = f => f.arrayBuffer().then(b => new Uint8Array(b));
+  const enBase64 = f => new Promise((ok, ko) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1]); r.onerror = ko; r.readAsDataURL(f); });
+  const urlsDepot = [];
+  const urlDe = blob => { const u = URL.createObjectURL(blob); urlsDepot.push(u); return u; };
+
+  async function recevoirFichiers(fichiers) {
+    urlsDepot.splice(0).forEach(u => URL.revokeObjectURL(u));
+    fichiers = Array.from(fichiers);
+    const pdfs = fichiers.filter(f => f.type === "application/pdf" || /\.pdf$/i.test(f.name));
+    const images = fichiers.filter(f => f.type.startsWith("image/"));
+    const r = $("v-resultat");
+    if (pdfs.length !== 1) { depot = null; r.innerHTML = `<div class="resultat ko"><h3>${pdfs.length ? "Un seul ticket à la fois" : "Il manque le ticket PDF"}</h3><p class="texte">Sélectionne le PDF du ticket (et les images du client si tu les as).</p></div>`; return; }
+    const ticket = HWPTicket.lire(await lireOctets(pdfs[0]), pdfs[0].name);
+    if (ticket.erreur) { depot = null; r.innerHTML = `<div class="resultat ko"><h3>✗ ${esc(ticket.erreur)}</h3></div>`; return; }
+    depot = { pdf: pdfs[0], ticket, images, apercus: ticket.apercus.map(o => new Blob([o], { type: "image/jpeg" })) };
+    rendreDepot();
+  }
+
+  function rendreDepot() {
+    const r = $("v-resultat"), { ticket, images, apercus } = depot, d = ticket.donnees;
+    const ent = ticket.code && liste.find(x => x.code === ticket.code);
+    const alertes = [];
+    if (!d) alertes.push("Ancien format de ticket : infos du client non lisibles automatiquement (le PDF sera quand même rangé).");
+    if (ent && d && d.nb !== ent.nb) alertes.push(`Le ticket annonce ${d.nb} affiche(s) mais le code a été donné pour ${ent.nb}. À clarifier avant d'imprimer.`);
+    const attendus = d ? d.designs.map(x => x.fichier) : [];
+    const manquants = attendus.filter(n => !images.some(f => f.name === n));
+    if (d && manquants.length) alertes.push(`${manquants.length} image(s) d'origine pas jointe(s) : je range les aperçus du PDF à la place (qualité réduite, demande les originaux au client pour imprimer).`);
+
+    let etat, titre;
+    if (!ticket.code) { etat = "ko"; titre = "✗ Code introuvable dans ce PDF"; }
+    else if (!ent) { etat = "ko"; titre = `✗ ${esc(ticket.code)} : code inconnu, ne pas imprimer`; alertes.unshift(codeValide(ticket.code) ? "Jamais généré sur cette tablette : fais « Mettre à jour la base » puis redépose le ticket." : "Format invalide : faux ticket ?"); }
+    else if (ent.recu) { etat = "deja"; titre = `⚠ ${esc(ticket.code)} : déjà reçu le ${dateFr(ent.recu)}`; alertes.unshift("Si c'est le même client qui renvoie son ticket, tu peux ré-enregistrer. Sinon : doublon."); }
+    else { etat = "ok"; titre = `✓ ${esc(ticket.code)} : code valide, pas encore utilisé`; }
+
+    const i = d ? d.infos : {};
+    const fiche = d ? `<dl class="fiche">
+        <dt>Client</dt><dd><b>${esc(i.prenom)} ${esc(i.nom)}</b></dd>
+        <dt>Chambre</dt><dd>${esc(i.chambre)}</dd>
+        <dt>Tél.</dt><dd>${esc(i.tel)}</dd>
+        <dt>Mail</dt><dd>${esc(i.email)}</dd>
+        ${i.insta ? `<dt>Insta</dt><dd>${esc(i.insta)}</dd>` : ""}
+        <dt>Commande</dt><dd>${d.nb} affiche${d.nb > 1 ? "s" : ""} A3 · ${euros(d.montant)}${ent ? ` · payé ${esc(ent.moyen)}` : ""}</dd>
+      </dl>` : (ent ? `<p class="texte">${infosCode(ent)}</p>` : "");
+    const vignettes = (d ? d.designs : apercus.map((_, k) => ({ fichier: "", qte: 1, note: "" }))).map((x, k) => {
+      const orig = images.find(f => f.name === x.fichier);
+      const src = orig ? urlDe(orig) : apercus[k] ? urlDe(apercus[k]) : "";
+      return `<figure>${src ? `<img alt="" src="${src}">` : ""}<figcaption><span class="q">×${x.qte}</span> design ${k + 1}${orig ? "" : " (aperçu)"}${x.note ? `<br>${esc(x.note)}` : ""}</figcaption></figure>`;
+    }).join("");
+    const peutRanger = !!ent;
+    r.innerHTML = `<div class="resultat ${etat}"><h3>${titre}</h3>${fiche}
+      ${alertes.length ? `<ul class="alertes">${alertes.map(a => `<li>${esc(a)}</li>`).join("")}</ul>` : ""}
+      <div class="vignettes">${vignettes}</div>
+      ${peutRanger ? `<button class="btn btn-rouge" id="ranger">${ent.recu ? "Ré-enregistrer dans le Drive" : "Valider : reçu + ranger dans le Drive"}</button><p class="petit" id="ranger-etat"></p>` : ""}</div>`;
+    if (peutRanger) $("ranger").onclick = () => ranger(ent);
+  }
+
+  async function appelBase(corps) {
+    const r = await fetch(base.url, { method: "POST", body: JSON.stringify({ cle: base.cle, ...corps }) });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.erreur || "refusé");
+    return j;
+  }
+
+  async function ranger(ent) {
+    if (!base.url || !base.cle) { toast("Configure d'abord la base (onglet Commandes)"); return; }
+    const { pdf, ticket, images, apercus } = depot, d = ticket.donnees;
+    const b = $("ranger"), etatTxt = $("ranger-etat");
+    b.disabled = true;
+    const recu = ent.recu || new Date().toISOString();
+    // fichiers à ranger : ticket + originaux (ou aperçus du PDF si l'original manque)
+    const fichiers = [{ nom: pdf.name, blob: pdf }];
+    if (d) d.designs.forEach((x, k) => {
+      const orig = images.find(f => f.name === x.fichier);
+      if (orig) fichiers.push({ nom: orig.name, blob: orig });
+      else if (apercus[k]) fichiers.push({ nom: `${ticket.code}_design${k + 1}_APERCU.jpg`, blob: apercus[k] });
+    });
+    images.filter(f => !fichiers.some(x => x.blob === f)).forEach(f => fichiers.push({ nom: f.name, blob: f }));
+    if (!d) apercus.forEach((a, k) => fichiers.push({ nom: `${ticket.code}_design${k + 1}_APERCU.jpg`, blob: a }));
+    try {
+      etatTxt.textContent = "Création du dossier…";
+      const c = await appelBase({ action: "commande", commande: {
+        code: ent.code, recu, nb: ent.nb, montant: ent.montant, moyen: ent.moyen,
+        infos: d ? d.infos : { prenom: ent.prenom }, designs: d ? d.designs : [], dateTicket: d ? d.date : null } });
+      for (let k = 0; k < fichiers.length; k++) {
+        etatTxt.textContent = `Envoi des fichiers ${k + 1}/${fichiers.length}…`;
+        const f = fichiers[k];
+        await appelBase({ action: "fichier", dossierId: c.dossierId, nom: f.nom, type: f.blob.type || "application/octet-stream", data: await enBase64(f.blob) });
+      }
+      ent.recu = recu; sauver();
+      etatTxt.innerHTML = `Rangé ✓ <a href="${esc(c.url)}" target="_blank" rel="noopener">ouvrir le dossier Drive</a>`;
+      synchroniser(true);
+      montrerConfirmation(ent, d);
+    } catch (err) {
+      etatTxt.textContent = `Échec : ${err.message === "Failed to fetch" ? "pas de réseau ou mauvaise adresse" : err.message}. Réessaie.`;
+    } finally { b.disabled = false; }
+  }
+
+  // écran plein à montrer au client une fois tout rangé
+  function montrerConfirmation(ent, d) {
+    const i = d ? d.infos : { prenom: ent.prenom };
+    $("confirme-code").textContent = ent.code;
+    $("confirme-nom").textContent = [i.prenom, i.nom].filter(Boolean).join(" ") || "Commande";
+    $("confirme-detail").textContent = `${ent.nb} affiche${ent.nb > 1 ? "s" : ""} A3 mat · ${euros(ent.montant)} payé${i.chambre ? ` · livraison chambre ${i.chambre}` : ""}`;
+    $("confirme-vignettes").innerHTML = Array.from(document.querySelectorAll("#v-resultat .vignettes img")).map(img => `<figure><img alt="" src="${img.src}"></figure>`).join("");
+    $("confirme").hidden = false;
+    $("confirme-fermer").focus();
+  }
+  $("confirme-fermer").onclick = () => {
+    $("confirme").hidden = true;
+    depot = null; $("v-resultat").innerHTML = ""; $("ranger-mail").open = false;
+    document.querySelector('[data-vue="v-liste"]').click();
+  };
+
+  $("v-fichiers").onchange = e => { recevoirFichiers(e.target.files); e.target.value = ""; };
+  const zone = $("depot");
+  ["dragenter", "dragover"].forEach(t => zone.addEventListener(t, e => { e.preventDefault(); zone.classList.add("survol"); }));
+  ["dragleave", "drop"].forEach(t => zone.addEventListener(t, e => { e.preventDefault(); zone.classList.remove("survol"); }));
+  zone.addEventListener("drop", e => recevoirFichiers(e.dataTransfer.files));
+
+  // ---------- liste ----------
+  function rendreListe() {
+    const tot = liste.reduce((s, e) => s + e.montant, 0), aff = liste.reduce((s, e) => s + e.nb, 0);
+    const recus = liste.filter(e => e.recu).length;
+    $("stats").innerHTML = `<span><b>${liste.length}</b> codes</span><span><b>${aff}</b> affiches</span><span><b>${euros(tot)}</b> encaissés</span><span><b>${recus}</b> tickets reçus</span>`;
+    $("lignes").innerHTML = liste.length ? liste.map((e, k) => `
+      <tr><td class="code">${e.code}</td><td>${dateFr(e.date)}</td><td>${esc(e.prenom || "–")}</td><td>${e.nb}</td><td>${euros(e.montant)} <span class="petit">${e.moyen}</span></td>
+      <td><button class="puce ${e.recu ? "recu" : ""}" data-k="${k}">${e.recu ? "reçu ✓" : "en attente"}</button></td>
+      <td><button class="suppr-code" data-suppr="${k}" aria-label="Supprimer ${e.code}">✕</button></td></tr>`).join("")
+      : `<tr><td colspan="7" class="petit">Aucun code pour l'instant.</td></tr>`;
+    $("lignes").querySelectorAll("[data-suppr]").forEach(b => b.onclick = () => supprimerCode(liste[b.dataset.suppr]));
+    $("lignes").querySelectorAll(".puce").forEach(b => b.onclick = () => {
+      const e = liste[b.dataset.k]; e.recu = e.recu ? null : new Date().toISOString(); sauver(); rendreListe();
+    });
+  }
+  const telecharger = (contenu, nom, type) => {
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([contenu], { type })); a.download = nom;
+    document.body.appendChild(a); a.click(); a.remove();
+  };
+  const jour = () => new Date().toISOString().slice(0, 10);
+
+  // ---------- base Google Sheet ----------
+  // L'adresse et la clé restent dans cette tablette (jamais dans le code publié).
+  const CLE_BASE = "hwp-base";
+  let base = {};
+  try { base = JSON.parse(localStorage.getItem(CLE_BASE)) || {}; } catch (e) {}
+  const sauverBase = () => { try { localStorage.setItem(CLE_BASE, JSON.stringify(base)); } catch (e) {} majEtatBase(); };
+  function majEtatBase() {
+    $("base-url").value = base.url || ""; $("base-cle").value = base.cle || "";
+    $("synchro-etat").textContent = !base.url ? "Base pas encore configurée : ouvre les réglages ci-dessous."
+      : base.derniere ? `Dernière mise à jour : ${dateFr(base.derniere)}` : "Base configurée, jamais mise à jour.";
+  }
+  majEtatBase();
+  $("base-ok").onclick = () => {
+    base.url = $("base-url").value.trim(); base.cle = $("base-cle").value.trim(); sauverBase();
+    $("reglages-base").open = false; toast("Réglages enregistrés");
+  };
+  $("synchro").onclick = () => synchroniser(false);
+
+  // ---------- chambres (prospection) ----------
+  // { "B214": { statut: "absent"|"repasser"|"non"|"client", essais: 2, derniere: iso, historique: [{statut, date}] } }
+  const CLE_CH = "hwp-caisse-chambres";
+  let chambres = {};
+  try { chambres = JSON.parse(localStorage.getItem(CLE_CH)) || {}; } catch (e) {}
+  const sauverChambres = () => { try { localStorage.setItem(CLE_CH, JSON.stringify(chambres)); } catch (e) {} };
+  const LIBELLES = { absent: "pas de réponse", repasser: "intéressé, repasser", non: "pas intéressé", client: "a acheté" };
+  const numChambre = v => String(v).replace(/\D/g, "").slice(0, 6);
+  const jourDe = iso => new Date(iso).toDateString();
+  const auj = () => new Date().toDateString();
+  function quand(iso) {
+    const j = Math.round((new Date(auj()) - new Date(jourDe(iso))) / 864e5);
+    const h = new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    return j === 0 ? `aujourd'hui ${h}` : j === 1 ? `hier ${h}` : `il y a ${j} j`;
+  }
+  function noter(num, statut) {
+    num = numChambre(num);
+    if (!num) { toast("Tape le numéro de la chambre"); $("ch-num").focus(); return; }
+    const c = chambres[num] || { essais: 0, historique: [] };
+    const date = new Date().toISOString();
+    c.statut = statut; c.derniere = date;
+    if (statut === "absent") c.essais = (c.essais || 0) + 1;
+    c.historique = (c.historique || []).concat({ statut, date }).slice(-20);
+    chambres[num] = c; sauverChambres();
+    toast(`${num} : ${LIBELLES[statut]}`);
+    $("ch-num").value = ""; $("ch-deja").textContent = "";
+    rendreChambres();
+    $("ch-num").focus();
+  }
+  document.querySelectorAll("[data-statut]").forEach(b => b.onclick = () => noter($("ch-num").value, b.dataset.statut));
+  $("ch-num").addEventListener("keydown", e => { if (e.key === "Enter") noter(e.target.value, "absent"); });
+  $("ch-num").addEventListener("input", e => {
+    if (/\D/.test(e.target.value)) e.target.value = numChambre(e.target.value);
+    const c = chambres[numChambre(e.target.value)];
+    $("ch-deja").textContent = c ? `Déjà notée : ${LIBELLES[c.statut]} (${quand(c.derniere)})${c.essais ? ` · ${c.essais}× sans réponse` : ""}` : "";
+  });
+  function ligneChambre(num, c, actions) {
+    const fait = jourDe(c.derniere) === auj();
+    return `<li class="${fait && actions ? "fait-auj" : ""}"><span class="ch-num">${esc(num)}</span>
+      <span class="ch-info"><b>${LIBELLES[c.statut]}</b> · ${quand(c.derniere)}${c.essais ? ` · ${c.essais}× sans réponse` : ""}</span>
+      <span class="ch-actions">${actions
+        ? `<button data-ch="${esc(num)}" data-s="absent">toujours personne</button><button data-ch="${esc(num)}" data-s="non">non</button><button class="client" data-ch="${esc(num)}" data-s="client">acheté ✓</button>`
+        : `<button data-ch="${esc(num)}" data-s="repasser">à retoquer</button><button data-ch="${esc(num)}" data-oublier>✕</button>`}</span></li>`;
+  }
+  function rendreChambres() {
+    const tout = Object.entries(chambres);
+    const aRetoquer = tout.filter(([, c]) => c.statut === "absent" || c.statut === "repasser")
+      // pas encore toquées aujourd'hui d'abord, puis les « repasser », puis les plus anciennes
+      .sort(([, a], [, b]) => (jourDe(a.derniere) === auj()) - (jourDe(b.derniere) === auj())
+        || (b.statut === "repasser") - (a.statut === "repasser") || a.derniere.localeCompare(b.derniere));
+    const faites = tout.filter(([, c]) => c.statut === "non" || c.statut === "client").sort(([, a], [, b]) => b.derniere.localeCompare(a.derniere));
+    const clients = faites.filter(([, c]) => c.statut === "client").length;
+    const ouvertes = tout.filter(([, c]) => (c.historique || []).some(h => h.statut !== "absent")).length;
+    const ajd = tout.filter(([, c]) => jourDe(c.derniere) === auj()).length;
+    $("ch-stats").innerHTML = `<span><b>${tout.length}</b> chambres</span><span><b>${ajd}</b> aujourd'hui</span><span><b>${aRetoquer.length}</b> à retoquer</span><span><b>${clients}</b> clients</span>${ouvertes ? `<span><b>${Math.round(clients / ouvertes * 100)} %</b> des portes ouvertes ont acheté</span>` : ""}`;
+    const restants = aRetoquer.filter(([, c]) => jourDe(c.derniere) !== auj()).length;
+    $("ch-nb-retoquer").textContent = aRetoquer.length ? `${restants} pas encore aujourd'hui` : "";
+    $("ch-retoquer").innerHTML = aRetoquer.length ? aRetoquer.map(([n, c]) => ligneChambre(n, c, true)).join("") : `<li class="petit">Rien à retoquer.</li>`;
+    $("ch-resume-faites").textContent = `Déjà faites (${faites.length} : ${clients} client${clients > 1 ? "s" : ""}, ${faites.length - clients} pas intéressé${faites.length - clients > 1 ? "s" : ""})`;
+    $("ch-faites").innerHTML = faites.map(([n, c]) => ligneChambre(n, c, false)).join("");
+    document.querySelectorAll("#v-chambres [data-s]").forEach(b => b.onclick = () => noter(b.dataset.ch, b.dataset.s));
+    document.querySelectorAll("#v-chambres [data-oublier]").forEach(b => b.onclick = () => {
+      if (!confirm(`Oublier la chambre ${b.dataset.ch} ?`)) return;
+      delete chambres[b.dataset.ch]; sauverChambres(); rendreChambres();
+    });
+  }
+  async function supprimerCode(e) {
+    if (!e) return;
+    const qui = `${e.code} (${e.prenom || "sans nom"}, ${e.nb} aff., ${euros(e.montant)})`;
+    if (!confirm(`Supprimer ${qui} ?\n\nLe code, sa commande et son dossier Drive seront supprimés partout. Le client ne pourra plus l'utiliser.`)) return;
+    if (base.url && base.cle) {
+      try {
+        const r = await fetch(base.url, { method: "POST", body: JSON.stringify({ cle: base.cle, action: "supprimer", code: e.code }) });
+        const j = await r.json();
+        if (!j.ok) throw new Error(j.erreur || "refusé");
+      } catch (err) {
+        toast(`Pas supprimé : ${err.message === "Failed to fetch" ? "pas de réseau" : err.message}`);
+        return;
+      }
+    }
+    liste = liste.filter(x => x.code !== e.code);
+    if (!supprimes.includes(e.code)) supprimes.push(e.code);
+    try { localStorage.setItem("hwp-caisse-supprimes", JSON.stringify(supprimes)); } catch (er) {}
+    sauver(); rendreListe();
+    toast(`${e.code} supprimé`);
+  }
+  async function synchroniser(silencieux) {
+    if (!base.url || !base.cle) { if (!silencieux) { $("reglages-base").open = true; toast("Renseigne l'adresse et la clé"); } return; }
+    const b = $("synchro"); b.disabled = true; b.textContent = "Mise à jour…";
+    try {
+      // corps en texte brut = requête « simple », acceptée par Google Apps Script sans pré-vérification CORS
+      const r = await fetch(base.url, { method: "POST", body: JSON.stringify({ cle: base.cle, liste }) });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.erreur || "refusé");
+      // la base fait référence : la tablette affiche exactement la liste du Sheet
+      // (codes supprimés ou nettoyés retirés, commandes reçues par le site marquées « reçu »)
+      const ajout = j.liste.filter(d => !liste.some(x => x.code === d.code)).length;
+      liste = j.liste.filter(d => d && d.code);
+      if (Array.isArray(j.supprimes)) {
+        supprimes = Array.from(new Set(supprimes.concat(j.supprimes)));
+        try { localStorage.setItem("hwp-caisse-supprimes", JSON.stringify(supprimes)); } catch (er) {}
+      }
+      liste.sort((a, b) => String(b.date).localeCompare(String(a.date))); sauver(); rendreListe();
+      base.derniere = new Date().toISOString(); sauverBase();
+      if (!silencieux) toast(`Base à jour : ${j.liste.length} codes${ajout ? `, ${ajout} récupéré(s)` : ""}`);
+    } catch (err) {
+      if (!silencieux) toast(`Échec base : ${err.message === "Failed to fetch" ? "pas de réseau ou mauvaise adresse" : err.message}`);
+    } finally { b.disabled = false; b.textContent = "Mettre à jour la base"; }
+  }
+  $("exp-csv").onclick = () => {
+    const q = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const lignes = [["code", "date", "prenom", "nb_affiches", "montant", "moyen_paiement", "ticket_recu"].join(",")]
+      .concat(liste.map(e => [e.code, e.date.slice(0, 16).replace("T", " "), q(e.prenom), e.nb, e.montant.toFixed(2), e.moyen, e.recu ? e.recu.slice(0, 16).replace("T", " ") : ""].join(",")));
+    telecharger("﻿" + lignes.join("\n"), `codes_${jour()}.csv`, "text/csv;charset=utf-8");
+  };
+  $("exp-json").onclick = () => telecharger(JSON.stringify(liste, null, 1), `caisse_sauvegarde_${jour()}.json`, "application/json");
+  $("imp-json").onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    try {
+      const data = JSON.parse(await f.text());
+      if (!Array.isArray(data)) throw 0;
+      let ajout = 0;
+      data.forEach(d => { if (d && d.code && !liste.some(x => x.code === d.code)) { liste.push(d); ajout++; } });
+      liste.sort((a, b) => b.date.localeCompare(a.date)); sauver(); rendreListe();
+      toast(`${ajout} code(s) restauré(s)`);
+    } catch (err) { toast("Fichier de sauvegarde illisible"); }
+    e.target.value = "";
+  };
+});
+</script>
+</body>
+</html>
